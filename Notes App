@@ -1,0 +1,103 @@
+Steps to Build the Notes App
+
+
+Step 1: Set up the Project
+bash:
+Create a project:
+django-admin startproject notes_project
+cd notes_project
+
+bash:
+Create an app:
+
+python manage.py startapp notes
+Add 'notes' to INSTALLED_APPS.
+
+Step 2: Create the Notes Model
+Edit notes/models.py:-
+python:
+
+from django.db import models
+
+class Note(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.title
+
+Run migrations:-
+python manage.py makemigrations
+python manage.py migrate
+
+Step 3: Create Views
+Edit notes/views.py:-
+python:
+
+from django.shortcuts import render, redirect
+from .models import Note
+
+def notes_list(request):
+    notes = Note.objects.all()
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        Note.objects.create(title=title, description=description)
+        return redirect('/')
+    return render(request, 'notes/notes_list.html', {'notes': notes})
+
+def delete_note(request, note_id):
+    note = Note.objects.get(id=note_id)
+    note.delete()
+    return redirect('/')
+
+Step 4: Create URLs
+Create notes/urls.py:-
+python:
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.notes_list, name='notes_list'),
+    path('delete/<int:note_id>/', views.delete_note, name='delete_note'),
+]
+
+Include the app URLs in notes_project/urls.py:-
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('notes.urls')),
+]
+Step 5: Create Templates
+Create a templates/notes folder.
+HTML:
+
+Create notes_list.html:-
+<!DOCTYPE html>
+<html>
+<head><title>Notes</title></head>
+<body>
+    <h1>Notes</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="title" placeholder="Title" required><br>
+        <textarea name="description" placeholder="Description" required></textarea><br>
+        <button type="submit">Add Note</button>
+    </form>
+    <ul>
+        {% for note in notes %}
+        <li>
+            <strong>{{ note.title }}</strong>: {{ note.description }}
+            <a href="{% url 'delete_note' note.id %}">Delete</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+
+Step 6: Run the Server
+
+Run the server and visit http://127.0.0.1:8000/.
